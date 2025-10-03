@@ -1,0 +1,17 @@
+# Ignore your virtual environments
+etl_runner/
+dashboarder/
+archive/
+
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Logs
+*.log
+
+# Environment/config files
+.env

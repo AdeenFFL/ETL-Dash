@@ -1,0 +1,77 @@
+
+import json
+import pandas as pd
+import tkinter as tk
+from tkinter import filedialog, messagebox
+from pymongo import MongoClient
+from bson import ObjectId
+import os
+
+def get_entity_name(logable_type, logable_id, db):
+    collection_map = {
+        "App\\Models\\CollectionPoint": "collection_points",
+        "App\\Models\\Plant": "plants",
+        "App\\Models\\Department": "departments",
+        "App\\Models\\Zone": "zones",
+        "App\\Models\\AreaOffice": "area_offices",
+        "App\\Models\\EmployeeCategory": "employee_categories"
+    }
+    collection_name = collection_map.get(logable_type)
+    if not collection_name:
+        return "Unknown Type"
+    try:
+        collection = db[collection_name]
+        oid = ObjectId(logable_id["$oid"]) if isinstance(logable_id, dict) and "$oid" in logable_id else ObjectId(logable_id)
+        doc = collection.find_one({"_id": oid})
+        if not doc:
+            return None
+        return doc.get("name") or doc.get("ao_name")
+    except Exception as e:
+        return f"Error: {e}"
+
+def process_json(json_path, db):
+    with open(json_path, 'r') as file:
+        data = json.load(file)
+    rows = []
+    for log in data:
+        row = {
+            "Timestamp": log["created_at"]["$date"],
+            "User ID": log["user_id"],
+            "Action": log["Description"],
+            "Entity Type": log["logable_type"].split("\\")[-1],
+            "Entity ID": log["logable_id"],
+            "Entity Name": get_entity_name(log["logable_type"], log["logable_id"], db)
+        }
+        rows.append(row)
+    df = pd.DataFrame(rows)
+    df['username'] = df['User ID'].apply(
+        lambda x: db.users.find_one({'_id': ObjectId(x)})['name'] if db.users.find_one({'_id': ObjectId(x)}) else 'Unknown User'
+    )
+    return df
+
+def main():
+    root = tk.Tk()
+    root.withdraw()
+    messagebox.showinfo("Select JSON File", "Please select your JSON log file.")
+    json_path = filedialog.askopenfilename(filetypes=[("JSON files", "*.json")])
+    if not json_path:
+        messagebox.showerror("No file selected", "No file was selected. Exiting.")
+        return
+
+    # Connect to MongoDB
+    client = MongoClient("mongodb://localhost:27017/")
+    db = client["milk_erp_dummy"]
+
+    try:
+        df = process_json(json_path, db)
+        export_path = filedialog.asksaveasfilename(defaultextension=".xlsx", filetypes=[("Excel files", "*.xlsx")])
+        if export_path:
+            df.to_excel(export_path, index=False)
+            messagebox.showinfo("Success", f"Exported to {export_path}")
+        else:
+            messagebox.showerror("No export path", "No export path selected. Exiting.")
+    except Exception as e:
+        messagebox.showerror("Error", str(e))
+
+if __name__ == "__main__":
+    main()

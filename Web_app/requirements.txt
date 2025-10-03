@@ -1,0 +1,30 @@
+# Core Dash framework
+dash==2.17.1
+dash-bootstrap-components==1.6.0
+dash-extensions==1.0.13
+
+# Plotting and visualization
+plotly==5.24.1
+
+# Data handling
+pandas==2.2.3
+numpy==2.1.2
+python-dateutil==2.9.0
+pytz==2025.1
+
+# Database connectivity
+pymongo==4.10.1
+
+# Geospatial (for mapping boundaries)
+geopandas==1.0.1
+shapely==2.0.6
+pyproj==3.6.1
+
+# Caching and performance
+Flask-Caching==2.3.0
+
+# Deployment
+gunicorn==23.0.0
+
+# Testing
+pytest==8.3.3
